@@ -2,7 +2,7 @@
 # KrunkScript Copyright (C) Yendis Entertainment Pty Ltd
 # 
 # Add custom actions here
-
+#a
 obj stamina = {
     count : 5000,
     check : true,
