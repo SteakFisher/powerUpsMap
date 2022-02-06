@@ -76,9 +76,12 @@ action sprintPlayer(num delta){
 
 action sprintActive(num code){
     if(code == 20){
-        if((num)stamina.count > ((num) sprint.staminaLoss -1)){
+        if((num)stamina.count > ((num) sprint.staminaLoss*-1)){
             sprint.state = true;
         }
+	else{
+	    sprint.state=false;
+	}
     }
 }
 
