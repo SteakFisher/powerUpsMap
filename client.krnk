@@ -4,26 +4,35 @@
 # Add custom actions here
 #a
 obj stamina = {
-    count : 5000,
+	max: 10000,
+	increaseTimerMax : 1000,
+	stagnantTimerMax : 1000,
+	
+    stagnantTimer : 0,
+    count : 10000,
     check : true,
     increaseTimer : 1000,
+	increaseValue : 500,
     old : 10000,
-    stagnantTimer : 0,
     stagnant : false
 };
 
 obj sprint = {
     boost : 0.0002,
+	key : 20,
     staminaLoss: -1,
+	
     state : false
 };
 
 obj jump = {
-	count: 0,
 	yVel: 0.013,
+	cooldownTimerMax : 4000,
+	staminaLoss: -2500,
+	
 	cooldownTimer: 0,
 	cooldownBool: false,
-	staminaLoss: -2500
+	count: 0
 };
 
 obj player = {};
@@ -43,7 +52,7 @@ action editStamina(num editNum){
 }
 
 bool action staminaStagnant(num delta){
-	if((num) stamina.count < 10000){
+	if((num) stamina.count < (num) stamina.max){
 		if((num) stamina.old == (num) stamina.count){
 			(num) stamina.stagnantTimer += delta;
 		}
@@ -51,7 +60,7 @@ bool action staminaStagnant(num delta){
 			stamina.stagnantTimer = 0;
 			stamina.stagnant = false;
 		}
-		if((num) stamina.stagnantTimer >= 1000){
+		if((num) stamina.stagnantTimer >= (num) stamina.stagnantTimerMax){
 		    stamina.stagnant = true;
 		}
 	}
@@ -62,11 +71,11 @@ bool action staminaStagnant(num delta){
 action increaseStamina(num delta){
 	(num) stamina.increaseTimer-=delta;
 	if((num) stamina.increaseTimer<=0){
-		stamina.increaseTimer=1000;
-		if((num) stamina.count<10000){
-			editStamina(500);
-			if((num) stamina.count>10000){
-				stamina.count=10000;
+		stamina.increaseTimer=stamina.increaseTimerMax;
+		if((num) stamina.count<(num) stamina.max){
+			editStamina((num)stamina.increaseValue);
+			if((num) stamina.count>(num) stamina.max){
+				stamina.count=(num) stamina.max;
 			}
 		}
 	}
@@ -82,7 +91,7 @@ action sprintPlayer(num delta){
 }
 
 action sprintActive(num code){
-    if(code == 20){
+    if(code == (num) sprint.key){
         if((num)stamina.count > ((num) sprint.staminaLoss*-1)){
             sprint.state = true;
         }
@@ -93,7 +102,7 @@ action sprintActive(num code){
 }
 
 action sprintDeactive(num code){
-    if(code == 20){
+    if(code == (num) sprint.key){
         sprint.state = false;
     }
 }
@@ -107,7 +116,7 @@ action checkSprint(num delta){
 bool action checkDoubleJump(num delta){
 	jump.cooldownBool = true;
 	(num) jump.cooldownTimer += delta;
-	if((num)jump.cooldownTimer > 4000){
+	if((num)jump.cooldownTimer > (num) jump.cooldownTimerMax){
 		jump.cooldownBool = false;
 	}
 	return (bool) jump.cooldownBool;
@@ -150,6 +159,7 @@ public action start() {
 public action update(num delta) {
     checkStamina();
 	checkDoubleJump(delta);
+	GAME.log(stamina.count);
 }
 
 # Add rendering logic in here
