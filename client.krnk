@@ -17,6 +17,22 @@ obj stamina = {
     stagnant : false
 };
 
+obj staminaBar = {
+    backgroundBar : {
+        css: 'width:550px;height:75px;position:absolute;' +
+			 'top:3%;right:2%;' +
+			 'background-color:#555555;cursor:pointer;border-radius:90px;' +
+			 'border:solid 2px #555555;display:block;' +
+             'color:white; font-size: 20px; font-weight: bold;',
+    },
+	staminaBar1 : {
+		css: 'width:528px;height:55px;position:absolute;' +
+			 'background-color:#3F37C9;cursor:pointer;border-radius:90px;top:8px;left:9px;' +
+			 'border:solid 2px #3F37C9;display:block;' +
+             'color:white; font-size: 20px; font-weight: bold;text-align: center;',
+	}
+};
+
 obj sprint = {
     boost : 0.0002,
 	key : 20,
@@ -26,8 +42,8 @@ obj sprint = {
 };
 
 obj jump = {
-	yVel: 0.013,
-	cooldownTimerMax : 4000,
+	yVel: 0.003,
+	cooldownTimerMax : 5000,
 	staminaLoss: -2500,
 	
 	cooldownTimer: 0,
@@ -42,6 +58,7 @@ bool action checkStamina(){
 	if((num) stamina.count<=0){
 		stamina.count=0;
 		stamina.check = false;
+		sprint.state = false;
 	}
 	return (bool) stamina.check;
 }
@@ -113,13 +130,13 @@ action checkSprint(num delta){
     }
 }
 
-bool action checkDoubleJump(num delta){
-	jump.cooldownBool = true;
-	(num) jump.cooldownTimer += delta;
-	if((num)jump.cooldownTimer > (num) jump.cooldownTimerMax){
-		jump.cooldownBool = false;
+action checkDoubleJump(num delta){
+	if(!!jump.cooldownBool){
+		(num) jump.cooldownTimer += delta;
+		if((num)jump.cooldownTimer >= (num) jump.cooldownTimerMax){
+			jump.cooldownBool = false;
+		}
 	}
-	return (bool) jump.cooldownBool;
 }
 
 action doubleJump(obj inputs, num delta){
@@ -144,15 +161,33 @@ action doubleJump(obj inputs, num delta){
         		else if((num)jump.count == 2){
 					(num) player.velocity.y += (delta * (num)jump.yVel);
         	    	jump.count = 3;
+					editStamina((num) jump.staminaLoss);
+					jump.cooldownBool = true;
         		}
     		}
 		}
 	}
 }
 
+action renderStaminaBar(){
+    GAME.UI.addDIV('backgroundBar', true, staminaBar.backgroundBar.css);
+    GAME.UI.addDIV('staminaBar', true, staminaBar.staminaBar1.css, 'backgroundBar');
+	GAME.UI.addDIV('staminaBarText', true, 'position:fixed;line-height:50px;', 'staminaBar');
+	GAME.UI.updateDIVText('staminaBarText', 'STAMINA');
+	GAME.UI.updateDIV('staminaBarText', 'font-size', '30px');
+	GAME.UI.updateDIV('staminaBarText', 'color', 'white');
+	GAME.UI.updateDIV('staminaBarText', 'text-indent', '200px');
+}
+
+action updateStaminaBar(){
+	num ratio = ((num) stamina.count / (num) stamina.max);
+	str newWidth = toStr (UTILS.math.floor(528 * ratio)) + 'px';
+	GAME.UI.updateDIV('staminaBar', 'width', newWidth);
+}
+
 # Runs when the game starts
 public action start() {
-    
+
 }
 
 # Runs every game tick
@@ -164,12 +199,13 @@ public action update(num delta) {
 
 # Add rendering logic in here
 public action render(num delta) {
-	
+	updateStaminaBar();
 }
 
 # Player spawns in
 public action onPlayerSpawn(str id) {
     player = GAME.PLAYERS.getSelf();
+    renderStaminaBar();
 }
 
 # Player died
