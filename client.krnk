@@ -189,6 +189,14 @@ action updateStaminaBar(){
 	GAME.UI.updateDIV('staminaBar', 'width', newWidth);
 }
 
+action playerFirstJoin(){
+	if(!!player.firstLoad){
+    	player = GAME.PLAYERS.getSelf();
+    	renderStaminaBar();
+		player.firstLoad = false;
+	}
+}
+
 # Runs when the game starts
 public action start() {
 
@@ -208,11 +216,7 @@ public action render(num delta) {
 
 # Player spawns in
 public action onPlayerSpawn(str id) {
-	if(!!player.firstLoad){
-    	player = GAME.PLAYERS.getSelf();
-    	renderStaminaBar();
-		player.firstLoad = false;
-	}
+	playerFirstJoin();
 	stamina.count = 10000;
 }
 
