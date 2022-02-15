@@ -3,6 +3,11 @@
 # 
 # Add custom actions here
 #a
+
+obj player = {
+	firstLoad : true
+};
+
 obj stamina = {
 	max: 10000,
 	increaseTimerMax : 1000,
@@ -51,7 +56,6 @@ obj jump = {
 	count: 0
 };
 
-obj player = {};
 
 bool action checkStamina(){
 	stamina.check = true;
@@ -133,7 +137,7 @@ action checkSprint(num delta){
 action checkDoubleJump(num delta){
 	if(!!jump.cooldownBool){
 		(num) jump.cooldownTimer += delta;
-		if((num)jump.cooldownTimer >= (num) jump.cooldownTimerMax){
+		if((num)jump.cooldownTimer > (num) jump.cooldownTimerMax){
 			jump.cooldownBool = false;
 		}
 	}
@@ -204,8 +208,12 @@ public action render(num delta) {
 
 # Player spawns in
 public action onPlayerSpawn(str id) {
-    player = GAME.PLAYERS.getSelf();
-    renderStaminaBar();
+	if(!!player.firstLoad){
+    	player = GAME.PLAYERS.getSelf();
+    	renderStaminaBar();
+		player.firstLoad = false;
+	}
+	stamina.count = 10000;
 }
 
 # Player died
