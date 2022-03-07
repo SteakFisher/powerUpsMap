@@ -2,7 +2,7 @@
 # KrunkScript Copyright (C) Yendis Entertainment Pty Ltd
 # 
 # Add custom actions here
-#a
+#
 
 obj player = {
 	firstLoad : true
@@ -10,13 +10,9 @@ obj player = {
 
 obj stamina = {
 	max: 10000,
-	increaseTimerMax : 1000,
-	stagnantTimerMax : 1000,
 	
-    stagnantTimer : 0,
     count : 10000,
     check : true,
-    increaseTimer : 1000,
 	increaseValue : 500,
     old : 10000,
     stagnant : false
@@ -48,14 +44,15 @@ obj sprint = {
 
 obj jump = {
 	yVel: 0.003,
-	cooldownTimerMax : 5000,
 	staminaLoss: -2500,
 	
-	cooldownTimer: 0,
 	cooldownBool: false,
 	count: 0
 };
 
+# staminaIncreaseTimer, stagnantTimer, jumpCoolDown
+num[] timers = num[0,0,0];
+num[] timersMax = num[1000, 1000, 5000];
 
 bool action checkStamina(){
 	stamina.check = true;
@@ -75,13 +72,13 @@ action editStamina(num editNum){
 bool action staminaStagnant(num delta){
 	if((num) stamina.count < (num) stamina.max){
 		if((num) stamina.old == (num) stamina.count){
-			(num) stamina.stagnantTimer += delta;
+			timers[1] += delta;
 		}
 		else if((num) stamina.old > (num) stamina.count){
-			stamina.stagnantTimer = 0;
+			timers[1] = 0;
 			stamina.stagnant = false;
 		}
-		if((num) stamina.stagnantTimer >= (num) stamina.stagnantTimerMax){
+		if(timers[1] >= timersMax[1]){
 		    stamina.stagnant = true;
 		}
 	}
@@ -90,9 +87,9 @@ bool action staminaStagnant(num delta){
 }
 
 action increaseStamina(num delta){
-	(num) stamina.increaseTimer-=delta;
-	if((num) stamina.increaseTimer<=0){
-		stamina.increaseTimer=stamina.increaseTimerMax;
+	timers[0]+=delta;
+	if(timers[0] >= timersMax[0]){
+		timers[0] = 0;
 		if((num) stamina.count<(num) stamina.max){
 			editStamina((num)stamina.increaseValue);
 			if((num) stamina.count>(num) stamina.max){
@@ -136,9 +133,10 @@ action checkSprint(num delta){
 
 action checkDoubleJump(num delta){
 	if(!!jump.cooldownBool){
-		(num) jump.cooldownTimer += delta;
-		if((num)jump.cooldownTimer > (num) jump.cooldownTimerMax){
+		timers[2] += delta;
+		if(timers[2] > timersMax[2]){
 			jump.cooldownBool = false;
+			timers[2] = 0;
 		}
 	}
 }
@@ -189,14 +187,6 @@ action updateStaminaBar(){
 	GAME.UI.updateDIV('staminaBar', 'width', newWidth);
 }
 
-action playerFirstJoin(){
-	if(!!player.firstLoad){
-    	player = GAME.PLAYERS.getSelf();
-    	renderStaminaBar();
-		player.firstLoad = false;
-	}
-}
-
 # Runs when the game starts
 public action start() {
 
@@ -216,7 +206,11 @@ public action render(num delta) {
 
 # Player spawns in
 public action onPlayerSpawn(str id) {
-	playerFirstJoin();
+	if(!!player.firstLoad){
+    	player = GAME.PLAYERS.getSelf();
+    	renderStaminaBar();
+		player.firstLoad = false;
+	}
 	stamina.count = 10000;
 }
 
