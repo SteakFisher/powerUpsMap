@@ -23,13 +23,13 @@ obj staminaBar = {
         css: 'width:550px;height:75px;position:absolute;' +
 			 'top:3%;right:2%;' +
 			 'background-color:#555555;cursor:pointer;border-radius:90px;' +
-			 'border:solid 2px #555555;display:block;' +
+			 'border:solid 2px #555555;display:block;overflow-y: hidden;' +
              'color:white; font-size: 20px; font-weight: bold;',
     },
 	staminaBar1 : {
 		css: 'width:528px;height:55px;position:absolute;' +
 			 'background-color:#3F37C9;cursor:pointer;border-radius:90px;top:8px;left:9px;' +
-			 'border:solid 2px #3F37C9;display:block;' +
+			 'border:solid 2px #3F37C9;display:block;overflow-y: hidden;' +
              'color:white; font-size: 20px; font-weight: bold;text-align: center;',
 	}
 };
@@ -201,7 +201,9 @@ public action update(num delta) {
 
 # Add rendering logic in here
 public action render(num delta) {
-	updateStaminaBar();
+	if((num) stamina.count != (num) stamina.old){
+		updateStaminaBar();
+	}
 }
 
 # Player spawns in
