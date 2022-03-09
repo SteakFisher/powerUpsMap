@@ -50,6 +50,10 @@ obj jump = {
 	count: 0
 };
 
+obj walk = {
+	staminaLoss: -0.005
+};
+
 # staminaIncreaseTimer, stagnantTimer, jumpCoolDown
 num[] timers = num[0,0,0];
 num[] timersMax = num[1000, 1000, 5000];
@@ -95,6 +99,18 @@ action increaseStamina(num delta){
 			if((num) stamina.count>(num) stamina.max){
 				stamina.count=(num) stamina.max;
 			}
+		}
+	}
+}
+
+action walkStamina(obj inputs){
+	if(!!inputs.movDir){
+		if((num) stamina.count != 0){
+			editStamina((num) walk.staminaLoss);
+		}
+		else if((num) stamina.count == 0){
+			player.velocity.x = 0;
+			player.velocity.z = 0;
 		}
 	}
 }
@@ -228,6 +244,7 @@ public action onPlayerUpdate(str id, num delta, obj inputs) {
 	}
     checkSprint(delta);
 	doubleJump(inputs, delta);
+	walkStamina(inputs);
 }
 
 # User pressed a key
