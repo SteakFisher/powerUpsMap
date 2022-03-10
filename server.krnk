@@ -1,0 +1,119 @@
+# Server Script runs only on Hosted server & not in test mode
+# KrunkScript Copyright (C) Yendis Entertainment Pty Ltd
+num maxPlayer = -1;
+# Add custom actions here
+
+bool action firstJoin(str id){
+	bool first = false;
+	obj player = GAME.PLAYERS.findByID(id);
+
+	if((num) player.sid > maxPlayer){
+		first = true;
+		maxPlayer = (num) player.sid;
+	}
+	
+	return first;
+}
+
+action loadPlayerProps(str id){
+	obj player = GAME.PLAYERS.findByID(id);
+
+		player.stamina = {
+			max: 10000,
+			
+		    count : 10000,
+		    check : true,
+			increaseValue : 500,
+		    old : 10000,
+		    stagnant : false
+		};
+
+		player.sprint = {
+		    boost : 0.0002,
+			key : 20,
+		    staminaLoss: -1,
+			
+		    state : false
+		};
+
+		player.jump = {
+			yVel: 0.003,
+			staminaLoss: -2500,
+			
+			cooldownBool: false,
+			count: 0
+		};
+
+		player.walk = {
+			staminaLoss: -0.005
+		};
+}
+
+
+
+# Runs when the game starts
+public action start() {
+
+}
+
+# Runs every game tick
+public action update(num delta) {
+
+}
+
+# Player spawns in
+public action onPlayerSpawn(str id) {
+	if(!!(firstJoin(id))){
+		loadPlayerProps(id);
+	}
+}
+
+# Player died
+public action onPlayerDeath(str id, str killerID) {
+
+}
+
+# Player got damaged
+public action onPlayerDamage(str id, str doerID, num amount) {
+
+}
+
+# Player update
+public action onPlayerUpdate(str id, num delta, obj inputs) {
+
+}
+
+# Called from Custom Trigger Action
+public action onCustomTrigger(str playerID, str customParam, num value) {
+
+}
+
+# Server receives network message
+public action onNetworkMessage(str id, obj data, str playerID) {
+
+}
+
+# Server receives chat message
+public action onChatMessage(str msg, str playerID) {
+
+}
+
+# When a player leaves the server
+public action onPlayerLeave(str playerID) {
+
+}
+
+# Runs when the round ends
+public action onGameEnd() {
+
+}
+
+# When a player finished a video
+public action onAdFinished(str playerID, bool success) {
+
+}
+
+# Runs when the server closes
+public action onServerClosed() {
+
+}
