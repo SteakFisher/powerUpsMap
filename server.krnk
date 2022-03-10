@@ -18,35 +18,47 @@ bool action firstJoin(str id){
 action loadPlayerProps(str id){
 	obj player = GAME.PLAYERS.findByID(id);
 
-		player.stamina = {
-			max: 10000,
-			
-		    count : 10000,
-		    check : true,
-			increaseValue : 500,
-		    old : 10000,
-		    stagnant : false
-		};
+	player.stamina = {
+		max: 10000,
+		
+	    count : 10000,
+	    check : true,
+		increaseValue : 500,
+	    old : 10000,
+	    stagnant : false
+	};
 
-		player.sprint = {
-		    boost : 0.0002,
-			key : 20,
-		    staminaLoss: -1,
-			
-		    state : false
-		};
+	player.sprint = {
+	    boost : 0.0002,
+		key : 20,
+	    staminaLoss: -1,
+		
+	    state : false
+	};
 
-		player.jump = {
-			yVel: 0.003,
-			staminaLoss: -2500,
-			
-			cooldownBool: false,
-			count: 0
-		};
+	player.jump = {
+		yVel: 0.003,
+		staminaLoss: -2500,
+		
+		cooldownBool: false,
+		count: 0
+	};
 
-		player.walk = {
-			staminaLoss: -0.005
-		};
+	player.walk = {
+		staminaLoss: -0.005
+	};
+
+	player.timer = {
+		staminaIncreaseTimer : 0,
+		stagnantTimer : 0,
+		jumpCoolDown : 0
+	};
+
+	player.timersMax = {
+		staminaIncreaseTimer : 1000,
+		stagnantTimer : 1000,
+		jumpCoolDown : 5000
+	};
 }
 
 
