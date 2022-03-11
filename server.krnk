@@ -57,7 +57,7 @@ action loadPlayerProps(str id){
 	player.timersMax = {
 		staminaIncreaseTimer : 1000,
 		stagnantTimer : 1000,
-		jumpCoolDown : 5000
+		jumpCoolDown : 5000 
 	};
 }
 
@@ -84,13 +84,13 @@ bool action staminaStagnant(str id, num delta){
 
 	if((num) player.stamina.count < (num) player.stamina.max){
 		if((num) player.stamina.old == (num) player.stamina.count){
-			timers[1] += delta;
+			(num) player.timer.stagnantTimer += delta;
 		}
-		else if((num) player.stamina.old > (num) splayer.tamina.count){
-			timers[1] = 0;
+		else if((num) player.stamina.old > (num) player.stamina.count){
+			(num) player.timer.stagnantTimer = 0;
 			player.stamina.stagnant = false;
 		}
-		if(timers[1] >= timersMax[1]){
+		if((num) player.timer.stagnantTimer >= (num) player.timersMax.stagnantTimer){
 		    player.stamina.stagnant = true;
 		}
 	}
@@ -101,11 +101,11 @@ bool action staminaStagnant(str id, num delta){
 action increaseStamina(str id, num delta){
 	obj player = GAME.PLAYERS.findByID(id);
 
-	timers[0]+=delta;
-	if(timers[0] >= timersMax[0]){
-		timers[0] = 0;
+	(num) player.timer.staminaIncreaseTimer +=delta;
+	if((num) player.timer.staminaIncreaseTimer  >= (num) player.timersMax.staminaIncreaseTimer){
+		(num) player.timer.staminaIncreaseTimer  = 0;
 		if((num) player.stamina.count<(num) player.stamina.max){
-			editStamina((num)player.stamina.increaseValue);
+			editStamina(id, (num)player.stamina.increaseValue);
 			if((num) player.stamina.count>(num) player.stamina.max){
 				player.stamina.count=(num) player.stamina.max;
 			}
@@ -118,7 +118,7 @@ action walkStamina(str id, obj inputs){
 
 	if(!!inputs.movDir){
 		if((num) player.stamina.count != 0){
-			editStamina((num) player.walk.staminaLoss);
+			editStamina(id, (num) player.walk.staminaLoss);
 		}
 		else if((num) player.stamina.count == 0){
 			player.velocity.x = 0;
@@ -130,12 +130,12 @@ action walkStamina(str id, obj inputs){
 action sprintPlayer(str id, num delta){
 	obj player = GAME.PLAYERS.findByID(id);
 
-    num zComp = (num) sprint.boost * delta * (Math.cos((num)player.rotation.x));
-    num xComp = (num) sprint.boost * delta * (Math.sin((num)player.rotation.x));
+    num zComp = (num) player.sprint.boost * delta * (Math.cos((num)player.rotation.x));
+    num xComp = (num) player.sprint.boost * delta * (Math.sin((num)player.rotation.x));
     (num) player.velocity.x -= xComp;
     (num) player.velocity.z -= zComp;
 
-    editStamina((num) player.sprint.staminaLoss * delta);
+    editStamina(id, (num) player.sprint.staminaLoss * delta);
 }
 
 action sprintActive(str id, num code){
@@ -154,7 +154,7 @@ action sprintActive(str id, num code){
 action sprintDeactive(str id, num code){
 	obj player = GAME.PLAYERS.findByID(id);
 
-    if(code == (num) sprint.key){
+    if(code == (num) player.sprint.key){
         player.sprint.state = false;
     }
 }
@@ -163,7 +163,7 @@ action checkSprint(str id, num delta){
 	obj player = GAME.PLAYERS.findByID(id);
 
     if(!!player.sprint.state){
-        sprintPlayer(delta);
+        sprintPlayer(id, delta);
     }
 }
 
@@ -171,10 +171,10 @@ action checkDoubleJump(str id, num delta){
 	obj player = GAME.PLAYERS.findByID(id);
 
 	if(!!player.jump.cooldownBool){
-		timers[2] += delta;
-		if(timers[2] > timersMax[2]){
+		(num) player.timer.jumpCoolDown += delta;
+		if((num) player.timer.jumpCoolDown > (num) player.timersMax.jumpCoolDown){
 			player.jump.cooldownBool = false;
-			timers[2] = 0;
+			(num) player.timer.jumpCoolDown = 0;
 		}
 	}
 }
@@ -203,7 +203,7 @@ action doubleJump(str id, obj inputs, num delta){
         		else if((num)player.jump.count == 2){
 					(num) player.velocity.y += (delta * (num)player.jump.yVel);
         	    	player.jump.count = 3;
-					editStamina((num) player.jump.staminaLoss);
+					editStamina(id, (num) player.jump.staminaLoss);
 					player.jump.cooldownBool = true;
         		}
     		}
