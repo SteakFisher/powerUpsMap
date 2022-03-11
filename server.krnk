@@ -179,7 +179,7 @@ action checkDoubleJump(str id, num delta){
 	}
 }
 
-action doubleJump(str id, obj inputs, num delta){
+action doubleJump(str id, obj inputs){
 	obj player = GAME.PLAYERS.findByID(id);
 
 	if(!player.jump.cooldownBool){
@@ -201,7 +201,7 @@ action doubleJump(str id, obj inputs, num delta){
         	    	player.jump.count = 1;
         		}
         		else if((num)player.jump.count == 2){
-					(num) player.velocity.y += (delta * (num)player.jump.yVel);
+					(num) player.velocity.y += (num)player.jump.yVel;
         	    	player.jump.count = 3;
 					editStamina(id, (num) player.jump.staminaLoss);
 					player.jump.cooldownBool = true;
@@ -218,7 +218,7 @@ public action start() {
 
 # Runs every game tick
 public action update(num delta) {
-
+	
 }
 
 # Player spawns in
@@ -226,6 +226,8 @@ public action onPlayerSpawn(str id) {
 	if(!!(firstJoin(id))){
 		loadPlayerProps(id);
 	}
+	obj player = GAME.PLAYERS.findByID(id);
+	player.stamina.count = player.stamina.max;
 }
 
 # Player died
@@ -240,7 +242,14 @@ public action onPlayerDamage(str id, str doerID, num amount) {
 
 # Player update
 public action onPlayerUpdate(str id, num delta, obj inputs) {
-
+	if(!!staminaStagnant(id, delta)){
+		increaseStamina(id, delta);
+	}
+	checkStamina(id);
+	checkDoubleJump(id, delta);
+    checkSprint(id, delta);
+	doubleJump(id, inputs);
+	walkStamina(id, inputs);
 }
 
 # Called from Custom Trigger Action
