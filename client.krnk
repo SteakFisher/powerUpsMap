@@ -38,8 +38,6 @@ obj sprint = {
     boost : 0.0002,
 	key : 20,
     staminaLoss: -1,
-	
-    state : false
 };
 
 obj jump = {
@@ -58,12 +56,17 @@ obj walk = {
 num[] timers = num[0,0,0];
 num[] timersMax = num[1000, 1000, 5000];
 
+action syncValues(){
+	player.registerSyncValues("sprintState");
+	player.registerSyncValues("jumpCooldownBool");
+}
+
 bool action checkStamina(){
 	stamina.check = true;
 	if((num) stamina.count<=0){
 		stamina.count=0;
 		stamina.check = false;
-		sprint.state = false;
+		player.sprintState = false;
 	}
 	return (bool) stamina.check;
 }
@@ -127,38 +130,38 @@ action sprintPlayer(num delta){
 action sprintActive(num code){
     if(code == (num) sprint.key){
         if((num)stamina.count > ((num) sprint.staminaLoss*-1)){
-            sprint.state = true;
+            player.sprintState = true;
         }
 	else{
-	    sprint.state=false;
+	    player.sprintState =false;
 	}
   }
 }
 
 action sprintDeactive(num code){
     if(code == (num) sprint.key){
-        sprint.state = false;
+        player.sprintState  = false;
     }
 }
 
 action checkSprint(num delta){
-    if(!!sprint.state){
+    if(!!player.sprintState){
         sprintPlayer(delta);
     }
 }
 
 action checkDoubleJump(num delta){
-	if(!!jump.cooldownBool){
+	if(!!player.jumpCooldownBool){
 		timers[2] += delta;
 		if(timers[2] > timersMax[2]){
-			jump.cooldownBool = false;
+			player.jumpCooldownBool = false;
 			timers[2] = 0;
 		}
 	}
 }
 
 action doubleJump(obj inputs, num delta){
-	if(!jump.cooldownBool){
+	if(!player.jumpCooldownBool){
 		if((num)stamina.count > (num)jump.staminaLoss){
 			if((num)jump.count > 0){
         		if(!!player.onGround){
@@ -180,7 +183,7 @@ action doubleJump(obj inputs, num delta){
 					(num) player.velocity.y += (delta * (num)jump.yVel);
         	    	jump.count = 3;
 					editStamina((num) jump.staminaLoss);
-					jump.cooldownBool = true;
+					player.jumpCooldownBool = true;
         		}
     		}
 		}
@@ -210,9 +213,7 @@ public action start() {
 
 # Runs every game tick
 public action update(num delta) {
-    checkStamina();
-	checkDoubleJump(delta);
-	GAME.log(stamina.count);
+	
 }
 
 # Add rendering logic in here
@@ -228,6 +229,9 @@ public action onPlayerSpawn(str id) {
     	player = GAME.PLAYERS.getSelf();
     	renderStaminaBar();
 		player.firstLoad = false;
+		player.sprintState = false;
+		player.jumpCooldownBool = false;
+		syncValues();
 	}
 	stamina.count = 10000;
 }
@@ -242,6 +246,8 @@ public action onPlayerUpdate(str id, num delta, obj inputs) {
 	if(!!staminaStagnant(delta)){
 		increaseStamina(delta);
 	}
+    checkStamina();
+	checkDoubleJump(delta);
     checkSprint(delta);
 	doubleJump(inputs, delta);
 	walkStamina(inputs);
