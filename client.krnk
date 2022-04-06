@@ -1,22 +1,7 @@
 # Client Script runs only on the client
 # KrunkScript Copyright (C) Yendis Entertainment Pty Ltd
-# 
+
 # Add custom actions here
-#
-
-obj player = {
-	firstLoad : true
-};
-
-obj stamina = {
-	max: 10000,
-	
-    count : 10000,
-    check : true,
-	increaseValue : 500,
-    old : 10000,
-    stagnant : false
-};
 
 obj staminaBar = {
     backgroundBar : {
@@ -34,164 +19,8 @@ obj staminaBar = {
 	}
 };
 
-obj sprint = {
-    boost : 0.0002,
-	key : 20,
-    staminaLoss: -1,
-};
-
-obj jump = {
-	yVel: 0.003,
-	staminaLoss: -2500,
-	
-	cooldownBool: false,
-	count: 0
-};
-
-obj walk = {
-	staminaLoss: -0.005
-};
-
-# staminaIncreaseTimer, stagnantTimer, jumpCoolDown
-num[] timers = num[0,0,0];
-num[] timersMax = num[1000, 1000, 5000];
-
-action syncValues(){
-	player.registerSyncValues("sprintState");
-	player.registerSyncValues("jumpCooldownBool");
-}
-
-bool action checkStamina(){
-	stamina.check = true;
-	if((num) stamina.count<=0){
-		stamina.count=0;
-		stamina.check = false;
-		player.sprintState = false;
-	}
-	return (bool) stamina.check;
-}
-
-action editStamina(num editNum){
-	(num) stamina.count+= editNum;
-	checkStamina();
-}
-
-bool action staminaStagnant(num delta){
-	if((num) stamina.count < (num) stamina.max){
-		if((num) stamina.old == (num) stamina.count){
-			timers[1] += delta;
-		}
-		else if((num) stamina.old > (num) stamina.count){
-			timers[1] = 0;
-			stamina.stagnant = false;
-		}
-		if(timers[1] >= timersMax[1]){
-		    stamina.stagnant = true;
-		}
-	}
-	stamina.old = (num) stamina.count;
-	return (bool) stamina.stagnant;
-}
-
-action increaseStamina(num delta){
-	timers[0]+=delta;
-	if(timers[0] >= timersMax[0]){
-		timers[0] = 0;
-		if((num) stamina.count<(num) stamina.max){
-			editStamina((num)stamina.increaseValue);
-			if((num) stamina.count>(num) stamina.max){
-				stamina.count=(num) stamina.max;
-			}
-		}
-	}
-}
-
-action walkStamina(obj inputs){
-	if(!!inputs.movDir){
-		if((num) stamina.count != 0){
-			editStamina((num) walk.staminaLoss);
-		}
-		else if((num) stamina.count == 0){
-			player.velocity.x = 0;
-			player.velocity.z = 0;
-		}
-	}
-}
-
-action sprintPlayer(num delta){
-    num zComp = (num) sprint.boost * delta * (Math.cos((num)player.rotation.x));
-    num xComp = (num) sprint.boost * delta * (Math.sin((num)player.rotation.x));
-    (num) player.velocity.x -= xComp;
-    (num) player.velocity.z -= zComp;
-
-    editStamina((num) sprint.staminaLoss * delta);
-}
-
-action sprintActive(num code){
-    if(code == (num) sprint.key){
-        if((num)stamina.count > ((num) sprint.staminaLoss*-1)){
-            player.sprintState = true;
-        }
-	else{
-	    player.sprintState =false;
-	}
-  }
-}
-
-action sprintDeactive(num code){
-    if(code == (num) sprint.key){
-        player.sprintState  = false;
-    }
-}
-
-action checkSprint(num delta){
-    if(!!player.sprintState){
-        sprintPlayer(delta);
-    }
-}
-
-action checkDoubleJump(num delta){
-	if(!!player.jumpCooldownBool){
-		timers[2] += delta;
-		if(timers[2] > timersMax[2]){
-			player.jumpCooldownBool = false;
-			timers[2] = 0;
-		}
-	}
-}
-
-action doubleJump(obj inputs, num delta){
-	if(!player.jumpCooldownBool){
-		if((num)stamina.count > (num)jump.staminaLoss){
-			if((num)jump.count > 0){
-        		if(!!player.onGround){
-        	    	jump.count = 0;
-        		}
-    		}
-    	
-    		if((num) jump.count == 1){
-        		if(!inputs.jump){
-        	    	jump.count = 2;
-        		}
-    		}
-	
-    		if(!!inputs.jump){
-        		if((num)jump.count == 0){
-        	    	jump.count = 1;
-        		}
-        		else if((num)jump.count == 2){
-					(num) player.velocity.y += (delta * (num)jump.yVel);
-        	    	jump.count = 3;
-					editStamina((num) jump.staminaLoss);
-					player.jumpCooldownBool = true;
-        		}
-    		}
-		}
-	}
-}
-
-action renderStaminaBar(){
-    GAME.UI.addDIV('backgroundBar', true, staminaBar.backgroundBar.css);
+action renderStaminabar(){
+	GAME.UI.addDIV('backgroundBar', true, staminaBar.backgroundBar.css);
     GAME.UI.addDIV('staminaBar', true, staminaBar.staminaBar1.css, 'backgroundBar');
 	GAME.UI.addDIV('staminaBarText', true, 'position:fixed;line-height:50px;', 'staminaBar');
 	GAME.UI.updateDIVText('staminaBarText', 'STAMINA');
@@ -200,40 +29,79 @@ action renderStaminaBar(){
 	GAME.UI.updateDIV('staminaBarText', 'text-indent', '200px');
 }
 
-action updateStaminaBar(){
-	num ratio = ((num) stamina.count / (num) stamina.max);
-	str newWidth = toStr (UTILS.math.floor(528 * ratio)) + 'px';
-	GAME.UI.updateDIV('staminaBar', 'width', newWidth);
-}
 
 # Runs when the game starts
 public action start() {
-
+	
 }
 
 # Runs every game tick
 public action update(num delta) {
-	
+
 }
 
 # Add rendering logic in here
 public action render(num delta) {
-	if((num) stamina.count != (num) stamina.old){
-		updateStaminaBar();
+	obj player = GAME.PLAYERS.getSelf();
+	if((num) player.stamina.count != (num) player.stamina.old){
+		num ratio = ((num) player.stamina.count / (num) player.stamina.max);
+		str newWidth = toStr (UTILS.math.floor(528 * ratio)) + 'px';
+		GAME.UI.updateDIV('staminaBar', 'width', newWidth);
+		
+		player.stamina.old = player.stamina.count;
 	}
 }
 
 # Player spawns in
 public action onPlayerSpawn(str id) {
-	if(!!player.firstLoad){
-    	player = GAME.PLAYERS.getSelf();
-    	renderStaminaBar();
-		player.firstLoad = false;
-		player.sprintState = false;
-		player.jumpCooldownBool = false;
-		syncValues();
-	}
-	stamina.count = 10000;
+	obj player = GAME.PLAYERS.getSelf();
+	player.sprintState = false;
+	player.sprintStateOld = false;
+	player.jumpCooldownBool = false;
+
+	renderStaminabar();
+
+	player.stamina = {
+		max: 10000,
+		
+	    count : 10000,
+	    check : true,
+		increaseValue : 500,
+	    old : 10000,
+	    stagnant : false
+	};
+
+	player.sprint = {
+	    boost : 0.0002,
+		key : 20,
+	    staminaLoss: -1,
+	};
+
+	player.timers = {
+		staminaIncreaseTimer : 0,
+		jumpCoolDown : 0
+	};
+
+	player.timersMax = {
+		staminaIncreaseTimer : 1000,
+		jumpCoolDown : 5000
+	};
+
+	player.walk = {
+		staminaLoss: -0.005
+	};
+
+	player.jump = {
+		yVel: 0.003,
+		staminaLoss: -2500,
+		
+		count: 0
+	};
+
+
+	player.registerSyncValues("sprintState");
+	player.registerSyncValues("stamina.count");
+	player.registerSyncValues("jumpCooldownBool");
 }
 
 # Player died
@@ -243,29 +111,132 @@ public action onPlayerDeath(str id, str killerID) {
 
 # Player update
 public action onPlayerUpdate(str id, num delta, obj inputs) {
-	if(!!staminaStagnant(delta)){
-		increaseStamina(delta);
+	obj player = GAME.PLAYERS.getSelf();
+	if(!!player.sprintState){
+		num zComp = (num) player.sprint.boost * delta * (Math.cos((num)player.rotation.x));
+    	num xComp = (num) player.sprint.boost * delta * (Math.sin((num)player.rotation.x));
+    	(num) player.velocity.x -= xComp;
+    	(num) player.velocity.z -= zComp;
+
+		(num) player.stamina.count -= 1 * delta;
 	}
-    checkStamina();
-	checkDoubleJump(delta);
-    checkSprint(delta);
-	doubleJump(inputs, delta);
-	walkStamina(inputs);
+
+	if((bool) player.sprintState != (bool) player.sprintStateOld){
+		GAME.NETWORK.send('ps', {d: player.sprintState});
+		player.sprintStateOld = player.sprintState;
+	}
+
+	if((num) player.stamina.count > (num) player.stamina.max){
+		player.stamina.count = player.stamina.max;
+	}
+
+	if((num) player.stamina.count < 0){
+		player.stamina.count = 0;
+		player.stamina.check = false;
+	}
+
+	if((num) player.stamina.count < (num) player.stamina.max){
+		if((num) player.stamina.old == (num) player.stamina.count){
+			(num) player.timers.staminaIncreaseTimer += delta;
+		}
+		
+		else if((num) player.stamina.old > (num) player.stamina.count){
+			player.timers.staminaIncreaseTimer = 0;
+		}
+		
+		if((num) player.timers.staminaIncreaseTimer >= (num) player.timersMax.staminaIncreaseTimer){
+			(num) player.stamina.count += (num) player.stamina.increaseValue;
+			player.timers.staminaIncreaseTimer = 0;
+		}
+	}
+
+	if(!!inputs.movDir){
+		if((num) player.stamina.count != 0){
+			(num) player.stamina.count += (num) player.walk.staminaLoss * delta;
+			player.timers.staminaIncreaseTimer = 0;
+		}
+		else if((num) player.stamina.count == 0){
+			player.velocity.x = 0;
+			player.velocity.z = 0;
+		}
+	}
+
+	if(!player.jumpCooldownBool){
+		if((num)player.stamina.count > (-1 * (num)player.jump.staminaLoss)){
+			if((num)player.jump.count > 0){
+        		if(!!player.onGround){
+        	    	player.jump.count = 0;
+        		}
+    		}
+    	
+    		if((num) player.jump.count == 1){
+        		if(!inputs.jump){
+        	    	player.jump.count = 2;
+        		}
+    		}
+	
+    		if(!!inputs.jump){
+        		if((num)player.jump.count == 0){
+        	    	player.jump.count = 1;
+        		}
+        		else if((num)player.jump.count == 2){
+					(num) player.velocity.y += (delta * (num)player.jump.yVel);
+        	    	player.jump.count = 3;
+					(num) player.stamina.count += (num)player.jump.staminaLoss;
+					player.jumpCooldownBool = true;
+        		}
+    		}
+		}
+	}
+
+	if(!!player.jumpCooldownBool){
+		(num) player.timers.jumpCoolDown += delta;
+		if((num) player.timers.jumpCoolDown > (num) player.timersMax.jumpCoolDown){
+			player.jumpCooldownBool = false;
+			(num) player.timers.jumpCoolDown = 0;
+		}
+	}
 }
 
 # User pressed a key
 public action onKeyPress(str key, num code) {
-    sprintActive(code);
+	obj player = GAME.PLAYERS.getSelf();
+	if(code == 20){
+		if((num) player.stamina.count > 0){
+			player.sprintState = true;
+		}
+		else{
+			player.sprintState = false;
+		}
+	}
 }
 
 # User released a key
 public action onKeyUp(str key, num code) {
-    sprintDeactive(code);
+	obj player = GAME.PLAYERS.getSelf();
+	if(code == 20){
+		player.sprintState = false;
+	}
 }
 
 # User held a key
 public action onKeyHeld(str key, num code) {
-    
+	
+}
+
+# User pressed a button on a controller
+public action onControllerPress(str key, num code) {
+
+}
+
+# User released a button on a controller
+public action onControllerUp(str key, num code) {
+
+}
+
+# User held a button on a controller
+public action onControllerHeld(str key, num code) {
+
 }
 
 # User clicked on screen
