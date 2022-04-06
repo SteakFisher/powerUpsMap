@@ -1,22 +1,25 @@
 # Server Script runs only on Hosted server & not in test mode
 # KrunkScript Copyright (C) Yendis Entertainment Pty Ltd
-num maxPlayer = -1;
+# 
 # Add custom actions here
 
-bool action firstJoin(str id){
-	bool first = false;
-	obj player = GAME.PLAYERS.findByID(id);
+# Runs when the game starts
+public action start() {
 
-	if((num) player.sid > maxPlayer){
-		first = true;
-		maxPlayer = (num) player.sid;
-	}
-	
-	return first;
 }
 
-action loadPlayerProps(str id){
+# Runs every game tick
+public action update(num delta) {
+
+}
+
+# Player spawns in
+public action onPlayerSpawn(str id) {
 	obj player = GAME.PLAYERS.findByID(id);
+	
+	player = GAME.PLAYERS.findByID(id);
+	player.sprintState = false;
+	player.sprintStateOld = false;
 
 	player.stamina = {
 		max: 10000,
@@ -25,165 +28,102 @@ action loadPlayerProps(str id){
 	    check : true,
 		increaseValue : 500,
 	    old : 10000,
-	    stagnant : false
 	};
 
 	player.sprint = {
 	    boost : 0.0002,
 		key : 20,
 	    staminaLoss: -1,
-		
-	    state : false
 	};
 
-	player.jump = {
-		yVel: 0.003,
-		staminaLoss: -2500,
-		
-		cooldownBool: false,
-		count: 0
+	player.timers = {
+		staminaIncreaseTimer : 0,
+		jumpCoolDown : 0
+	};
+
+	player.timersMax = {
+		staminaIncreaseTimer : 1000,
+		jumpCoolDown : 5000
 	};
 
 	player.walk = {
 		staminaLoss: -0.005
 	};
 
-	player.timer = {
-		staminaIncreaseTimer : 0,
-		stagnantTimer : 0,
-		jumpCoolDown : 0
-	};
-
-	player.timersMax = {
-		staminaIncreaseTimer : 1000,
-		stagnantTimer : 1000,
-		jumpCoolDown : 5000 
+	player.jump = {
+		yVel: 0.003,
+		staminaLoss: -2500,
+		
+		count: 0
 	};
 }
 
-bool action checkStamina(str id){
+# Player died
+public action onPlayerDeath(str id, str killerID) {
+
+}
+
+# Player got damaged
+public action onPlayerDamage(str id, str doerID, num amount) {
+
+}
+
+# Player update
+public action onPlayerUpdate(str id, num delta, obj inputs) {
 	obj player = GAME.PLAYERS.findByID(id);
-	
-	player.stamina.check = true;
-	if((num) player.stamina.count<=0){
-		player.stamina.count=0;
-		player.stamina.check = false;
-		player.sprint.state = false;
+	GAME.log(player.stamina.count);
+	if(!!player.sprintState){
+		num zComp = (num) player.sprint.boost * delta * (Math.cos((num)player.rotation.x));
+    	num xComp = (num) player.sprint.boost * delta * (Math.sin((num)player.rotation.x));
+    	(num) player.velocity.x -= xComp;
+    	(num) player.velocity.z -= zComp;
+
+		(num) player.stamina.count -= 1 * delta;
 	}
-	return (bool) player.stamina.check;
-}
 
-action editStamina(str id, num editNum){
-	obj player = GAME.PLAYERS.findByID(id);
-	(num) player.stamina.count+= editNum;
-	checkStamina(id);
-}
+	if((bool) player.sprintState != (bool) player.sprintStateOld){
+		GAME.NETWORK.send('ps', {d: player.sprintState});
+		player.sprintStateOld = player.sprintState;
+	}
 
-bool action staminaStagnant(str id, num delta){
-	obj player = GAME.PLAYERS.findByID(id);
+	if((num) player.stamina.count > (num) player.stamina.max){
+		player.stamina.count = player.stamina.max;
+	}
+
+	if((num) player.stamina.count < 0){
+		player.stamina.count = 0;
+		player.stamina.check = false;
+	}
 
 	if((num) player.stamina.count < (num) player.stamina.max){
 		if((num) player.stamina.old == (num) player.stamina.count){
-			(num) player.timer.stagnantTimer += delta;
+			(num) player.timers.staminaIncreaseTimer += delta;
 		}
+		
 		else if((num) player.stamina.old > (num) player.stamina.count){
-			(num) player.timer.stagnantTimer = 0;
-			player.stamina.stagnant = false;
+			player.timers.staminaIncreaseTimer = 0;
 		}
-		if((num) player.timer.stagnantTimer >= (num) player.timersMax.stagnantTimer){
-		    player.stamina.stagnant = true;
+		
+		if((num) player.timers.staminaIncreaseTimer >= (num) player.timersMax.staminaIncreaseTimer){
+			(num) player.stamina.count += (num) player.stamina.increaseValue;
+			player.timers.staminaIncreaseTimer = 0;
 		}
-	}
-	player.stamina.old = (num) player.stamina.count;
-	return (bool) player.stamina.stagnant;
-}
-
-action increaseStamina(str id, num delta){
-	obj player = GAME.PLAYERS.findByID(id);
-
-	(num) player.timer.staminaIncreaseTimer +=delta;
-	if((num) player.timer.staminaIncreaseTimer  >= (num) player.timersMax.staminaIncreaseTimer){
-		(num) player.timer.staminaIncreaseTimer  = 0;
-		if((num) player.stamina.count<(num) player.stamina.max){
-			editStamina(id, (num)player.stamina.increaseValue);
-			if((num) player.stamina.count>(num) player.stamina.max){
-				player.stamina.count=(num) player.stamina.max;
-			}
-		}
-	}
-}
-
-action walkStamina(str id, obj inputs){
-	obj player = GAME.PLAYERS.findByID(id);
-
+		
+		player.stamina.old = player.stamina.count;
+	}	
+	
 	if(!!inputs.movDir){
 		if((num) player.stamina.count != 0){
-			editStamina(id, (num) player.walk.staminaLoss);
+			(num) player.stamina.count += (num) player.walk.staminaLoss * delta;
 		}
 		else if((num) player.stamina.count == 0){
 			player.velocity.x = 0;
 			player.velocity.z = 0;
 		}
 	}
-}
 
-action sprintPlayer(str id, num delta){
-	obj player = GAME.PLAYERS.findByID(id);
-
-    num zComp = (num) player.sprint.boost * delta * (Math.cos((num)player.rotation.x));
-    num xComp = (num) player.sprint.boost * delta * (Math.sin((num)player.rotation.x));
-    (num) player.velocity.x -= xComp;
-    (num) player.velocity.z -= zComp;
-
-    editStamina(id, (num) player.sprint.staminaLoss * delta);
-}
-
-action sprintActive(str id, num code){
-	obj player = GAME.PLAYERS.findByID(id);
-
-    if(code == (num) player.sprint.key){
-        if((num)player.stamina.count > ((num) player.sprint.staminaLoss*-1)){
-            player.sprint.state = true;
-        }
-	else{
-	    player.sprint.state=false;
-	}
-  }
-}
-
-action sprintDeactive(str id, num code){
-	obj player = GAME.PLAYERS.findByID(id);
-
-    if(code == (num) player.sprint.key){
-        player.sprint.state = false;
-    }
-}
-
-action checkSprint(str id, num delta){
-	obj player = GAME.PLAYERS.findByID(id);
-
-    if(!!player.sprint.state){
-        sprintPlayer(id, delta);
-    }
-}
-
-action checkDoubleJump(str id, num delta){
-	obj player = GAME.PLAYERS.findByID(id);
-
-	if(!!player.jump.cooldownBool){
-		(num) player.timer.jumpCoolDown += delta;
-		if((num) player.timer.jumpCoolDown > (num) player.timersMax.jumpCoolDown){
-			player.jump.cooldownBool = false;
-			(num) player.timer.jumpCoolDown = 0;
-		}
-	}
-}
-
-action doubleJump(str id, obj inputs){
-	obj player = GAME.PLAYERS.findByID(id);
-
-	if(!player.jump.cooldownBool){
-		if((num)player.stamina.count > (num)player.jump.staminaLoss){
+	if(!player.jumpCooldownBool){
+		if((num)player.stamina.count > (-1 * (num)player.jump.staminaLoss)){
 			if((num)player.jump.count > 0){
         		if(!!player.onGround){
         	    	player.jump.count = 0;
@@ -201,55 +141,22 @@ action doubleJump(str id, obj inputs){
         	    	player.jump.count = 1;
         		}
         		else if((num)player.jump.count == 2){
-					(num) player.velocity.y += (num)player.jump.yVel;
+					(num) player.velocity.y += (delta * (num)player.jump.yVel);
         	    	player.jump.count = 3;
-					editStamina(id, (num) player.jump.staminaLoss);
-					player.jump.cooldownBool = true;
+					(num) player.stamina.count += (num)player.jump.staminaLoss;
+					player.jumpCooldownBool = true;
         		}
     		}
 		}
 	}
-}
 
-# Runs when the game starts
-public action start() {
-
-}
-
-# Runs every game tick
-public action update(num delta) {
-	
-}
-
-# Player spawns in
-public action onPlayerSpawn(str id) {
-	if(!!(firstJoin(id))){
-		loadPlayerProps(id);
+	if(!!player.jumpCooldownBool){
+		(num) player.timers.jumpCoolDown += delta;
+		if((num) player.timers.jumpCoolDown > (num) player.timersMax.jumpCoolDown){
+			player.jumpCooldownBool = false;
+			(num) player.timers.jumpCoolDown = 0;
+		}
 	}
-	obj player = GAME.PLAYERS.findByID(id);
-	player.stamina.count = player.stamina.max;
-}
-
-# Player died
-public action onPlayerDeath(str id, str killerID) {
-
-}
-
-# Player got damaged
-public action onPlayerDamage(str id, str doerID, num amount) {
-
-}
-
-# Player update
-public action onPlayerUpdate(str id, num delta, obj inputs) {
-	if(!!staminaStagnant(id, delta)){
-		increaseStamina(id, delta);
-	}
-	checkStamina(id);
-	checkDoubleJump(id, delta);
-    checkSprint(id, delta);
-	doubleJump(id, inputs);
-	walkStamina(id, inputs);
 }
 
 # Called from Custom Trigger Action
@@ -259,7 +166,10 @@ public action onCustomTrigger(str playerID, str customParam, num value) {
 
 # Server receives network message
 public action onNetworkMessage(str id, obj data, str playerID) {
-
+	obj player = GAME.PLAYERS.findByID(playerID);
+	if(id == 'ps'){
+		player.sprintState = data.d;
+	}
 }
 
 # Server receives chat message
