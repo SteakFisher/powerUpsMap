@@ -5,7 +5,11 @@ num max = -1;
 
 # Runs when the game starts
 public action start() {
-
+	obj[] players = GAME.PLAYERS.list();
+	for(num i = 0; i < lengthOf players; i++){
+		players[i].hasJump = false;
+		players[i].hasSprint = false;
+	}
 }
 
 # Runs every game tick
