@@ -90,7 +90,7 @@ public action onPlayerUpdate(str id, num delta, obj inputs) {
 		player.stamina.count = player.stamina.max;
 	}
 
-	if((num) player.stamina.count < 0){
+	if((num) player.stamina.count <= 0){
 		player.stamina.count = 0;
 		player.stamina.check = false;
 	}
@@ -119,6 +119,7 @@ public action onPlayerUpdate(str id, num delta, obj inputs) {
 		else if((num) player.stamina.count == 0){
 			player.velocity.x = 0;
 			player.velocity.z = 0;
+			player.timers.staminaIncreaseTimer = 0;
 		}
 	}
 
