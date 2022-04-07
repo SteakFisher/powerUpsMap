@@ -32,7 +32,9 @@ action renderStaminabar(){
 
 # Runs when the game starts
 public action start() {
-	
+	obj player = GAME.PLAYERS.getSelf();
+	player.hasJump = false;
+	player.hasSprint = false;
 }
 
 # Runs every game tick
