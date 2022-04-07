@@ -1,6 +1,6 @@
 # Server Script runs only on Hosted server & not in test mode
 # KrunkScript Copyright (C) Yendis Entertainment Pty Ltd
-# 
+num max = -1;
 # Add custom actions here
 
 # Runs when the game starts
@@ -21,6 +21,12 @@ public action onPlayerSpawn(str id) {
 	player.sprintState = false;
 	player.sprintStateOld = false;
 
+	if((num) player.sid > max){
+		max = (num) player.sid;
+		player.hasJump = true;
+		player.hasSprint = true;
+	}
+
 	player.stamina = {
 		max: 10000,
 		
@@ -33,7 +39,8 @@ public action onPlayerSpawn(str id) {
 	player.sprint = {
 	    boost : 0.0002,
 		key : 20,
-	    staminaLoss: -1,
+		has: false,
+	    staminaLoss: -1
 	};
 
 	player.timers = {
@@ -53,6 +60,7 @@ public action onPlayerSpawn(str id) {
 	player.jump = {
 		yVel: 0.003,
 		staminaLoss: -2500,
+		has: false,
 		
 		count: 0
 	};
@@ -72,19 +80,22 @@ public action onPlayerDamage(str id, str doerID, num amount) {
 public action onPlayerUpdate(str id, num delta, obj inputs) {
 	obj player = GAME.PLAYERS.findByID(id);
 	GAME.log(player.stamina.count);
-	if(!!player.sprintState){
-		num zComp = (num) player.sprint.boost * delta * (Math.cos((num)player.rotation.x));
-    	num xComp = (num) player.sprint.boost * delta * (Math.sin((num)player.rotation.x));
-    	(num) player.velocity.x -= xComp;
-    	(num) player.velocity.z -= zComp;
-
-		(num) player.stamina.count -= 1 * delta;
+	if(!!player.hasSprint){
+		if(!!player.sprintState){
+			num zComp = (num) player.sprint.boost * delta * (Math.cos((num)player.rotation.x));
+    		num xComp = (num) player.sprint.boost * delta * (Math.sin((num)player.rotation.x));
+    		(num) player.velocity.x -= xComp;
+    		(num) player.velocity.z -= zComp;
+	
+			(num) player.stamina.count -= 1 * delta;
+		}
+	
+		if((bool) player.sprintState != (bool) player.sprintStateOld){
+			GAME.NETWORK.send('ps', {d: player.sprintState});
+			player.sprintStateOld = player.sprintState;
+		}
 	}
-
-	if((bool) player.sprintState != (bool) player.sprintStateOld){
-		GAME.NETWORK.send('ps', {d: player.sprintState});
-		player.sprintStateOld = player.sprintState;
-	}
+	
 
 	if((num) player.stamina.count > (num) player.stamina.max){
 		player.stamina.count = player.stamina.max;
@@ -108,13 +119,12 @@ public action onPlayerUpdate(str id, num delta, obj inputs) {
 			(num) player.stamina.count += (num) player.stamina.increaseValue;
 			player.timers.staminaIncreaseTimer = 0;
 		}
-		
-		player.stamina.old = player.stamina.count;
-	}	
-	
+	}
+
 	if(!!inputs.movDir){
 		if((num) player.stamina.count != 0){
 			(num) player.stamina.count += (num) player.walk.staminaLoss * delta;
+			player.timers.staminaIncreaseTimer = 0;
 		}
 		else if((num) player.stamina.count == 0){
 			player.velocity.x = 0;
@@ -122,40 +132,41 @@ public action onPlayerUpdate(str id, num delta, obj inputs) {
 			player.timers.staminaIncreaseTimer = 0;
 		}
 	}
-
-	if(!player.jumpCooldownBool){
-		if((num)player.stamina.count > (-1 * (num)player.jump.staminaLoss)){
-			if((num)player.jump.count > 0){
-        		if(!!player.onGround){
-        	    	player.jump.count = 0;
-        		}
-    		}
-    	
-    		if((num) player.jump.count == 1){
-        		if(!inputs.jump){
-        	    	player.jump.count = 2;
-        		}
-    		}
-	
-    		if(!!inputs.jump){
-        		if((num)player.jump.count == 0){
-        	    	player.jump.count = 1;
-        		}
-        		else if((num)player.jump.count == 2){
-					(num) player.velocity.y += (delta * (num)player.jump.yVel);
-        	    	player.jump.count = 3;
-					(num) player.stamina.count += (num)player.jump.staminaLoss;
-					player.jumpCooldownBool = true;
-        		}
-    		}
+	if(!!player.hasJump){
+			if(!player.jumpCooldownBool){
+			if((num)player.stamina.count > (-1 * (num)player.jump.staminaLoss)){
+				if((num)player.jump.count > 0){
+    	    		if(!!player.onGround){
+    	    	    	player.jump.count = 0;
+    	    		}
+    			}
+    		
+    			if((num) player.jump.count == 1){
+    	    		if(!inputs.jump){
+    	    	    	player.jump.count = 2;
+    	    		}
+    			}
+		
+    			if(!!inputs.jump){
+    	    		if((num)player.jump.count == 0){
+    	    	    	player.jump.count = 1;
+    	    		}
+    	    		else if((num)player.jump.count == 2){
+						(num) player.velocity.y += (delta * (num)player.jump.yVel);
+    	    	    	player.jump.count = 3;
+						(num) player.stamina.count += (num)player.jump.staminaLoss;
+						player.jumpCooldownBool = true;
+    	    		}
+    			}
+			}
 		}
-	}
-
-	if(!!player.jumpCooldownBool){
-		(num) player.timers.jumpCoolDown += delta;
-		if((num) player.timers.jumpCoolDown > (num) player.timersMax.jumpCoolDown){
-			player.jumpCooldownBool = false;
-			(num) player.timers.jumpCoolDown = 0;
+	
+		if(!!player.jumpCooldownBool){
+			(num) player.timers.jumpCoolDown += delta;
+			if((num) player.timers.jumpCoolDown > (num) player.timersMax.jumpCoolDown){
+				player.jumpCooldownBool = false;
+				(num) player.timers.jumpCoolDown = 0;
+			}
 		}
 	}
 }
