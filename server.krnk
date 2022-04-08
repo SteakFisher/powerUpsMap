@@ -3,6 +3,24 @@
 num max = -1;
 # Add custom actions here
 
+action dataLoad(obj data, bool success, str accountName){
+	if(!!success){
+		obj[] players = GAME.PLAYERS.list();
+	
+		for(num i = 0; i < lengthOf players; i++){
+			if((str) players[i].accountName == accountName){
+				if(notEmpty data){
+					players[i].coins = data.coins;
+				}
+				else{
+					GAME.STORAGE.set(players[i].accountName, {coins: 0}, false);
+				}
+			}
+		}
+	}
+}
+
+
 # Runs when the game starts
 public action start() {
 	obj[] players = GAME.PLAYERS.list();
@@ -29,6 +47,9 @@ public action onPlayerSpawn(str id) {
 		max = (num) player.sid;
 		player.hasJump = true;
 		player.hasSprint = true;
+		player.coins = 0;
+		
+		GAME.STORAGE.load(player.accountName, '', dataLoad);
 	}
 
 	player.stamina = {
