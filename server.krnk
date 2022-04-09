@@ -11,6 +11,7 @@ action dataLoad(obj data, bool success, str accountName){
 			if((str) players[i].accountName == accountName){
 				if(notEmpty data){
 					players[i].coins = data.coins;
+					GAME.NETWORK.send('cc', {c: players[i].coins}, players[i].id);
 				}
 				else{
 					GAME.STORAGE.set(players[i].accountName, {coins: 0}, false);
