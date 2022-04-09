@@ -275,5 +275,8 @@ public action onDIVClicked(str id) {
 
 # Client receives network message
 public action onNetworkMessage(str id, obj data) {
-
+	obj player = GAME.PLAYERS.getSelf();
+	if(id=='cc'){
+		player.coins = data.c;
+	}
 }
